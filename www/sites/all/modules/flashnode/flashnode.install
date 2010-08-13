@@ -1,0 +1,213 @@
+<?php
+// $Id: flashnode.install,v 1.12 2008/08/17 22:30:15 stuartgreenfield Exp $
+
+/**
+ * Implementation of hook_install().
+ */
+function flashnode_install() {
+  drupal_install_schema('flashnode');
+}
+
+
+/**
+ * Implementation of hook_uninstall
+ */
+function flashnode_uninstall() {
+  drupal_uninstall_schema('flashnode');
+}
+
+
+/**
+ * Schema definition for Flash node
+ */
+function flashnode_schema() {
+  $schema['flashnode'] = array(
+    'description' => t('Stores details associated with each Flash file, such as height, width and display mode.'),
+    'fields' => array(
+      'vid' => array(
+        'description' => t('Primary key: {node}.vid for revision tracking of Flash nodes.'),
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ),
+      'fid' => array(
+        'description' => t('{file}.fid associated with each Flash node revision.'),
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ),
+      'nid' => array(
+        'description' => t('{node}.nid with which the Flash file is associated.'),
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ),
+      'height' => array(
+        'description' => t('Display height, in pixels, of the Flash file.'),
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ),
+      'width' => array(
+        'description' => t('Display width, in pixels, of the Flash file.'),
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ),
+      'display' => array(
+        'description' => t('Display mode for the Flash file in this node: 0 = teaser and body, 1 = teaser only, 2 = body only.'),
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'size' => 'tiny',
+        'not null' => TRUE,
+      ),
+      'substitution' => array(
+        'description' => t('Substitution text to display if using a JavaScript replacement method.'),
+        'type' => 'text',
+        'size' => 'big',
+        'not null' => TRUE,
+      ),
+      'flashvars' => array(
+        'description' => t('Flashvars to pass to the Flash file.'),
+        'type' => 'text',
+        'size' => 'big',
+        'not null' => TRUE,
+      ),
+      'base' => array(
+        'description' => t('Base parameter to pass to the Flash file.'),
+        'type' => 'varchar',
+        'length' => '255',
+        'not null' => TRUE,
+      ),
+      'params' => array(
+        'description' => t('Parameters to pass to the Flash player.'),
+        'type' => 'varchar',
+        'length' => '255',
+        'not null' => TRUE,
+      ),
+    ),
+    'primary key' => array('vid'),
+  );
+
+  return $schema;
+}
+
+
+/**
+ * If this is an upgrade install (i.e. from Drupal 5) then update flashnode filepath
+ * entries in {files} to be consistent with Drupal 6 storage convention
+ * Also update schema to ensure it matches new specification
+ */
+function flashnode_update_6000() {
+
+  // Initialise array for results
+  $ret = array();
+
+  // Retrieve the file_directory_path and append a slash
+  $base = file_directory_path().'/';
+
+  // SQL string varies depending whether MySQL or Postgres
+  switch ($GLOBALS['db_type']) {
+    case 'mysql':
+    case 'mysqli':
+      $sql = "UPDATE {files} SET filepath = CONCAT('".$base."', filepath) WHERE filename = '_flashnode'";
+      break;
+
+    case 'pgsql':
+      $sql = "UPDATE {files} SET filepath = '".$base."' || filepath WHERE filename = '_flashnode'";
+  }
+
+  // Run the update
+  $ret[] = update_sql($sql);
+
+  // Drop the existing primary key (nid)
+  db_drop_primary_key($ret, 'flashnode');
+
+  // Amend vid to match new schema
+  db_change_field($ret, 'flashnode', 'vid', 'vid', array(
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ), array('primary key' => array('vid')));
+
+  // Amend fid to match new schema
+  db_change_field($ret, 'flashnode', 'fid', 'fid', array(
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ), array());
+
+  // Amend base to match new schema
+  db_change_field($ret, 'flashnode', 'base', 'base', array(
+        'type' => 'varchar',
+        'length' => '255',
+        'not null' => TRUE,
+      ),array());
+
+  // Amend nid to match new schema
+  db_change_field($ret, 'flashnode', 'nid', 'nid', array(
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ),array());
+
+  // Amend height to match new schema
+  db_change_field($ret, 'flashnode', 'height', 'height', array(
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ),array());
+
+  // Amend height to match new schema
+  db_change_field($ret, 'flashnode', 'width', 'width', array(
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ),array());
+
+  // Amend display to match new schema
+  db_change_field($ret, 'flashnode', 'display', 'display', array(
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'size' => 'tiny',
+        'not null' => TRUE,
+      ),array());
+
+  // Amend substitution to match new schema
+  db_change_field($ret, 'flashnode', 'substitution', 'substitution', array(
+        'type' => 'text',
+        'size' => 'big',
+        'not null' => TRUE,
+      ),array());
+
+  // Amend flashvars to match new schema
+  db_change_field($ret, 'flashnode', 'flashvars', 'flashvars', array(
+        'type' => 'text',
+        'size' => 'big',
+        'not null' => TRUE,
+      ),array());
+
+  // Return results
+  return $ret;
+}
+
+/**
+ * Add 'params' column in order to support parameters associated with flash nodes
+ */
+function flashnode_update_6001() {
+
+  // Initialise array for results
+  $ret = array();
+
+  // Add the parameters field
+  db_add_field($ret, 'flashnode', 'params', array(
+    'description' => t('Parameters to pass to the Flash player.'),
+    'type' => 'varchar',
+    'length' => '255',
+    'not null' => TRUE,)
+  );
+
+  // Return results
+  return $ret;
+
+}

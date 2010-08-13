@@ -1,0 +1,30 @@
+Flash node installation instructions
+------------------------------------
+
+1.) Copy the flashnode directory to your modules directory
+
+2.) Enable the module at Administer > Site building > Modules > Flash node
+
+3.) Enable user access as required at Administer > User management > Access
+    control
+
+4.) Enable the flash filter if required at Administer > Site configuration >
+    Input formats
+
+5.) Alter the default settings at Administer > Site configuration > Flash
+    node settings
+
+To create Flash content simply go to Create content > Flash
+
+Note - flash node uses direct embedding of content. In the short term this will
+result in the 'Click here to activate and use this control' message under
+Internet Explorer. However, this requirement will shortly be removed from IE.
+
+To enable javascript embedding requires the use of the SWF Tools module, but
+at this time SWF Tools has not been upgraded to Drupal 6. Once this has been
+done then you can optionally download and install SWF Tools to enable script
+replacement methods. Installing SWF Tools will also to re-enable handling of
+mp3 or flv files via the SWF Tools media players. The latest information on
+SWF Tools can be found at drupal.org/project/swftools
+
+; $Id: INSTALL.txt,v 1.7 2008/02/26 22:45:39 stuartgreenfield Exp $

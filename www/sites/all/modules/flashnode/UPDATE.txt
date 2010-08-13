@@ -1,0 +1,45 @@
+Updating from flash node version 5 to version 6
+-----------------------------------------------
+
+It is essential that all users of flash node read these instructions!
+Failure to do so may break your flash nodes!
+
+
+Upgrading from 5.x.3.1 or earlier
+---------------------------------
+If you are currently using flash node 5.x.3.1 or earlier then you MUST update
+your existing site to flash node 5.x.5.3 or later before moving to Drupal 6.
+Drupal 6 makes a change to the {files} table that breaks the way earlier flash
+node versions access it. Updating to the latest version of flash node 5.x will
+patch flash node in preparation for this change. Users of flash node 5.x.4.0
+and later do *not* need to upgrade their existing installations first.
+
+To update earlier versions of flash node in preparation for upgrade to Drupal 6
+please do the following:
+
+1. Backup your database (or as a minimum, the {flashnode} table)
+2. Download the latest flash node release from drupal.org/project/flashnode
+3. Log in to your site as the administrator
+4. Upload the flashnode files to your flash node module directory
+5. Run update.php
+6. Update 9 is applied to your flash node installation and fixes the issue
+
+You can now proceed to upgrade your site (after checking other modules to see
+if they have any specific upgrade requirements!) Follow the instructions below.
+
+
+Upgrading from 5.x.4.0 and later
+--------------------------------
+Simply upgrade flash node along with the rest of your site using the normal
+Drupal upgrade method (i.e. disable custom modules, upgrade the site, reinstall
+custom modules, run update.php)
+
+There are useful resources such as videos at drupal.org/drupal-6.0
+
+Once you have installed flash node 6.x it is essential to run update.php as
+flash node update 6000 must be applied. This update is required to make
+existing flash nodes work. If flash node update 6000 is not applied existing
+content will not display.
+
+; $Id: UPDATE.txt,v 1.6 2008/02/26 22:45:39 stuartgreenfield Exp $
+
