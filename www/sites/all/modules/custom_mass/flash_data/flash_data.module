@@ -1,0 +1,73 @@
+<?php
+// $Id$
+
+/**
+ * @file
+ * Receives and parses XML sent from a Flash app via URL POST request.
+ * 
+ */
+
+/**
+ * Implementation of hook_menu().
+ */
+function flash_data_menu() {
+	
+	$items = array();
+	$items['flash_input'] = array(
+		'title' => t('Testing'),
+		'page callback' => 'flash_data_receive',
+		'access arguments' => array(TRUE),
+		'type' => MENU_CALLBACK
+	);
+	
+	return $items;
+}
+
+/**
+ * Parse XML posted via URL REQUEST POST
+ *
+ * XML sent can trigger the following options:
+ * - Send Achievement
+ * - Send Document
+ * - Send Research
+ * - Send Forum
+ * - Send Checkpoint
+ */
+function flash_data_receive() {
+	// @TODO Make this php attack safe!
+	$xml = file_get_contents('php://input');
+	$data = xml_parser_string_to_array($xml);
+	// dpr($data);
+	
+	// Gather generic data
+	$player_id = $data["PLAYERID"];
+	$game_id = $data["GAMEID"];
+	
+	// Handle Achievements
+	$achievement_id = $data["achievement"]["ACHIEVEMENTID"];
+	// @TODO check to see if the current player has already earned the achievement. if not, award it. if so, log it but do not notify
+	
+	// Handle Documents
+	// @TODO note how many times the document has been made available
+	// make it available if it is unavailable
+	
+	// Handle Research Data
+	// @TODO
+	
+	// Handle Forum Post
+	// @TODO Check for the correct forum id, send a post from the player with the message
+	
+	// Handle Checkpoint
+	// @TODO save checkpoint
+	
+	
+	
+	// dpr($player_id . ", " . $game_id . ", " . $achievement_id);
+}
+
+
+
+
+
+
+

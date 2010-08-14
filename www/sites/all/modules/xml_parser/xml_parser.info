@@ -1,0 +1,13 @@
+; $Id
+
+name = XML Parser
+description = Module containing a class for parsing XML Feeds.
+package = CMS Professionals
+core = 6.x
+
+; Information added by drupal.org packaging script on 2010-02-11
+version = "6.x-1.0"
+core = "6.x"
+project = "xml_parser"
+datestamp = "1265911227"
+
