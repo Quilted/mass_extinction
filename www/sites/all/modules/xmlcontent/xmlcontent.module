@@ -1,0 +1,291 @@
+<?php
+// $Id: xmlcontent.module,v 1.7.2.2 2009/03/29 02:17:19 weam Exp $
+
+/**
+ * The XML Content module enables you to store XML content 
+ *  in a node body and use the drupal built-in filter system 
+ *  to transform it to HTML with a pre-configured XSLT 
+ *  script of your choice.
+ *
+ * It also provides optional XML input (on-submit) checks for 
+ * well-formedness and schema-validation.
+ *
+ *  @version $Id: xmlcontent.module,v 1.7.2.2 2009/03/29 02:17:19 weam Exp $
+ *  @author Weam Abu Zaki
+ */
+
+/**
+ * Implementation of hook_enable().
+ */
+function xmlcontent_enable() {
+  // until hook_requirements works reliably!
+  if (!_xmlcontent_check_xml_support()) {
+    drupal_set_message(t('XML Content: Your instalation of PHP does not have appropriate XML/XSL support. <b>XML Content should be disabled</b>.'), 'error');
+  }
+}
+
+/**
+ * Implementation of hook_filter().
+ */
+function xmlcontent_filter($op, $delta = 0, $format = -1, $text = '') {
+  switch ($op) {    
+    case 'list':
+      return array(0 => t('XML Content XSLT filter'));
+  
+    case 'no cache':
+      return true;  // still in development stage, remove this in production site
+
+    case 'description':
+      return t('Allows users to post XML node content and get it transformed through a configured XSLT script');
+
+    case 'process':
+      $xslt_path = drupal_get_path('module', 'xmlcontent'). '/' . variable_get("xmlcontent_xslt_path_$format", '');
+      return _xmlcontent_transform($text, $xslt_path);
+
+    case 'settings':
+      return _xmlcontent_filter_settings($format);
+    default:
+      return $text;
+  }  
+}
+
+/**
+ * Implementation of hook_filter_tips().
+ */
+function xmlcontent_filter_tips($delta, $format, $long = false) {
+  if ($long) {
+    return t('The whole node body must be a valid XML document. Schema validation and XSLT file path are configured from the Input Format configuration page.');
+  } else {
+    return t('You can use <b>XML Content XSLT Filter</b> to set the whole node body to a valid XML document and transform it to HTML with XSLT.');
+  }
+}
+
+/**
+ * Implementation of hook_nodeapi()
+ */
+function xmlcontent_nodeapi(&$node, $op, $a3 = NULL, $a4 = NULL) {
+  switch ($op) {
+    case 'validate':
+      // check for PHP Dom support
+      if (!_xmlcontent_check_xml_support()) {
+        return;
+      }
+      // Does the input format of this node use XML Content filter?
+      $format = filter_resolve_format($node->format);
+      $module = db_result(db_query('SELECT module FROM {filters} WHERE format = %d', $format));
+      if ($module != 'xmlcontent') {
+        return;
+      }
+      
+      // Get the validation type configured for this format
+      $validation = variable_get("xmlcontent_schema_type_$format", 'none');
+      if ($validation == 'none') {
+        return;
+      }      
+      
+      $schema_path = drupal_get_path('module', 'xmlcontent'). '/' . variable_get("xmlcontent_schema_path_$format",'');        
+      if (!is_file($schema_path) && ($validation == 'xsd' or $validation == 'rng')) {
+        $schema_path = null;
+        watchdog( 'xmlcontent', 'Validation required but no schema file', array(), WATCHDOG_WARNING );
+      }
+      
+      // initialize libxml error handling
+      libxml_clear_errors();
+      libxml_use_internal_errors(true);
+
+      if (!_xmlcontent_validate($node->body, $validation, $schema_path)) {
+        form_set_error('body', t('XML Content: Invalid XML') . _xmlcontent_libxml_errors_string());
+      }
+      
+      libxml_clear_errors();
+      break;
+  }
+}  
+
+/**
+ * Validates the sent XML according to the specified validation type.
+ * @param xml
+ *   The XML content to be validated as a string
+ * @param validation
+ *   The validation type required (string): possible values are (none, wellformed,dtd,xsd,rng)
+ * @param schema_path
+ *   The path to the schema file
+ */
+function _xmlcontent_validate($xml, $validation = 'wellformed', $schema_path = null) {
+  if (!$xml) {
+    return false;
+  }
+  $dom = new DomDocument('1.0', 'UTF-8');
+  switch ($validation) {
+    case 'none':
+      $ok = true;
+      break;
+    
+    case 'wellformed':
+      $ok = $dom->loadXML($xml);
+      break;
+    
+    case 'dtd':
+      if ($ok = $dom->loadXML($xml)) {
+        $ok = $dom->validate();
+      }
+      break;
+      
+    case 'xsd':
+      if ($ok = $dom->loadXML($xml)) {
+        $ok = $dom->schemaValidate($schema_path);
+      }
+      break;
+
+    case 'rng':
+      if ($ok = $dom->loadXML($xml)) {
+        $ok = $dom->relaxNGValidate($schema_path);
+      }
+      break;
+  }
+  return $ok;
+}
+
+/**
+ * Settings for the filter.
+ */
+function _xmlcontent_filter_settings($format) {
+  $form['xmlcontent'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('XML Content'),
+    '#collapsible' => TRUE,
+    '#collapsed' => FALSE,
+  );
+  $form['xmlcontent']["xmlcontent_xslt_path_$format"] = array(
+    '#type'    => 'textfield',
+    '#title'   => t('XSLT Script File Path'),
+    '#default_value' => variable_get("xmlcontent_xslt_path_$format", ''),
+    '#field_prefix'  => drupal_get_path('module', 'xmlcontent'). '/',
+    '#description'  => t('The file path to the XSLT script to be used for this format.'),
+  );
+  $form['xmlcontent']['validation'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('XML Validation'),
+    '#collapsible' => TRUE,
+    '#collapsed' => FALSE,
+  );
+  $form['xmlcontent']['validation']["xmlcontent_schema_type_$format"] = array(
+    '#type'    => 'select',
+    '#title'   => t('Validation Type'),
+    '#default_value' => variable_get("xmlcontent_schema_type_$format", 'wellformed'),
+    '#options' => array('none' => '[None]', 'wellformed' => 'Well-formedness Only', 'dtd' => 'DTD Validation', 'xsd' => 'XML Schema Validation', 'rng' => 'RNG Schema Validation') ,
+    '#description'  => t('The level of validation required on this format.'),
+  );    
+  
+  $form['xmlcontent']['validation']["xmlcontent_schema_path_$format"] = array(
+    '#type'    => 'textfield',
+    '#title'   => t('Schema File Path'),
+    '#default_value' => variable_get("xmlcontent_schema_path_$format", ''),
+    '#field_prefix'  => drupal_get_path('module', 'xmlcontent'). '/',
+    '#description'  => t('The file path to the XSD/RNG schema to be used for validating this format. <b>Leave blank if you do not need schema validation</b>'),
+  );    
+  return $form;
+}
+
+/**
+ * Performs the XML to HTML processing operation.
+ * @param xml
+ *   The xml document as a text string (mostly obtained from the body of a node)
+ * @param path_to_xslt
+ *   The file path to the XSLT script to be used for processing
+ * @param params
+ *   An array of name-value pairs for special parameters to be passed to the XSLT processor
+ *   before invoking it on the XML data document. Examples include namespace settings and
+ *   XSL parameters.
+ */
+function _xmlcontent_transform($xml, $path_to_xslt, $params = array()) {
+  if (!$xml) {
+    watchdog('xmlcontent',"Empty XML content",array(), WATCHDOG_WARNING);
+    return $xml;
+  }
+    
+  // make sure that PHP has the required XSLT support, and failsafe if not
+  if (!_xmlcontent_check_xml_support()) {
+    watchdog('xmlcontent',"XML/XSLT PHP support misconfigured", array(), WATCHDOG_ERROR);
+    return $xml;
+  }
+  
+  // check that the XSLT file exists
+  if (!is_file($path_to_xslt)) {
+    watchdog('xmlcontent',"XSLT unavailable, invalid file or path: '$path_to_xslt'", array(), WATCHDOG_ERROR);
+    return $xml;  
+  }  
+  
+  // Load the XML document
+  $dom = new DomDocument('1.0', 'UTF-8');
+  $valid = $dom->loadXML($xml);
+  if (!$valid) {
+    watchdog('xmlcontent', "Invalid XML Content", array(), WATCHDOG_WARNING);
+    return $xml;
+  }
+  
+  // Load the XSLT script
+  // TODO: is there a way to cache it, or not necessary
+  $xsl = new DomDocument('1.0', 'UTF-8');
+  $xsl->load($path_to_xslt);   
+
+  // Create the XSLT processor
+  $proc = new XsltProcessor();
+  $xsl = $proc->importStylesheet($xsl);  
+ 
+  // Currently the empty &quot;&quot; namespace is used.  
+  define (XMLCONTENT_DFLT_NS, ''); 
+  
+  // initialize the processor with the parameters when defined
+  foreach($params as $key => $value) {
+    $proc->setParameter(XMLCONTENT_DFLT_NS, $key, $value);
+  }
+
+  // Transform
+  $newdom = $proc->transformToDoc($dom);
+  
+  // Return the output as XML text (in fact subset of XHTML, depending on the XSLT script)
+  return $newdom->saveXML();
+}
+
+
+/*
+ * Formats and returns libxml errors as a ul
+ */
+function _xmlcontent_libxml_errors_string() {
+  $errors = libxml_get_errors();
+  $errstr = '<ul>';
+  foreach ($errors as $error) {
+    $errstr .= '<li>';
+    switch ($error->level) {
+      case LIBXML_ERR_WARNING:
+        $errstr .= "<b>Warning $error->code</b>: ";
+        break;
+      case LIBXML_ERR_ERROR:
+        $errstr .= "<b>Error $error->code</b>: ";
+        break;
+      case LIBXML_ERR_FATAL:
+        $errstr .= "<b>Fatal Error $error->code</b>: ";
+        break;
+    }
+/*    if ($error->file) {
+      $return .= " in <b>$error->file</b>";
+    }*/
+    $errstr .= trim($error->message);
+    $errstr .= '</li>';
+  }
+  return $errstr . '</ul>';
+}
+
+
+/**
+ * Checks if the running PHP installation has Dom support.
+ * TODO: needs more advanced checks
+ */
+function _xmlcontent_check_xml_support() {
+  if (!class_exists('DomDocument') || !class_exists('XsltProcessor') || !function_exists('libxml_get_errors')) {
+    return false;
+  } else {
+    return true;
+  }
+}

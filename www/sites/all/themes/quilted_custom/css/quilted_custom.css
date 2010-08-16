@@ -1,0 +1,110 @@
+/* Accessability */
+
+	body {
+		font-size: 0.875em;
+		line-height: 1.3em;
+	}
+
+	#skip-to-nav {
+		float: left;
+	}
+	
+	#skip-to-nav a:link,
+	#skip-to-nav a:visited {
+		color: black; /* whatever color the background is */
+	}
+	
+	#skip-to-nav a:active,
+	#skip-to-nav a:focus {
+		color: white; /* contrasting color to background */
+	}
+
+
+/* Usability */
+
+	.node-form #edit-title {
+		font-size: 2em;
+	}
+	
+	a,
+	a:link {
+		text-decoration: none;
+	}
+	
+	a:hover,
+	a:active {
+		text-decoration: underline;
+	}
+	
+
+/* Layout */
+
+	.with-navbar #content,
+	.with-navbar #sidebar-primary,
+	.with-navbar #sidebar-secondary {
+		margin-top: 1.5em;
+	}
+
+
+/* Utilities */
+
+	/*
+	 * Markup free clearing (See: http://www.positioniseverything.net/easyclearing.html )
+	 */
+	.clearfix:after {
+	  content: ".";
+	  display: block;
+	  height: 0;
+	  clear: both;
+	  visibility: hidden;
+	}
+
+
+/* Module fixes */
+
+	/* Admin Menu */
+	
+	body.admin-menu {
+	/*	margin-top: 30px !important;*/
+	}
+	
+	
+	/* Views */
+	
+		div.view div.views-admin-links ul.links li,
+		.admin-links ul.links li,
+		div.panel-pane div.admin-links li {
+			background-color: #333;
+			margin: 0;
+			padding: 0;
+		}
+		
+		div.view div.views-admin-links ul.links {
+			margin: 0;
+		}
+		
+		div.view {
+			position: relative;
+		}
+		
+		div.view div.views-admin-links,
+		.admin-links {
+			margin-top: 0;
+			line-height: 0.7em;
+			right: 0;
+			text-align: right;
+		}
+		
+		div.view div.views-admin-links ul.links li a {
+			padding: 5px;
+		}
+		
+		.admin-links ul.links li a,
+		div.view div.admin-links-hover a, 
+		div.view div.admin-links:hover a,
+		.views-admin-links ul.links li a,
+		div.view div.views-admin-links-hover a, 
+		div.view div.views-admin-links:hover a,
+		div.panel-pane div.admin-links li a {
+			color: white;
+		}

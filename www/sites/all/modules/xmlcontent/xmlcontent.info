@@ -1,0 +1,13 @@
+; $Id: xmlcontent.info,v 1.5.2.1 2008/04/06 16:10:35 weam Exp $
+name = XML Content
+description = "An XML validator and content filter that changes XML node Body to HTML according to a configurable XSLT stylesheet"
+core = 6.x
+
+package = "Content Filters"
+project = "xmlcontent"
+; Information added by drupal.org packaging script on 2010-07-11
+version = "6.x-1.x-dev"
+core = "6.x"
+project = "xmlcontent"
+datestamp = "1278836404"
+

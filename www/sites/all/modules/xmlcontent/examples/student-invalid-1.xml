@@ -1,0 +1,5 @@
+<!-- invalid according to schema student.xsd -->
+<student>
+  <name>Roger</name>
+  <age>twenty</age>
+</student>
