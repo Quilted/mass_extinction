@@ -441,10 +441,6 @@ function quilted_custom_preprocess_node_flashnode(&$vars, $hook) {
     // Post URL should always be the same
     $url = $base_url . "/flash_input";  
     
-    
-    // @TODO remove manual
-    $url = "temp-mass.quilted.coop/flash_input";
-    
     // Adjust Flashnode's flashvars to accept database data
     $flashnode = node_load($vars['node']->nid);
     $flashnode->flashnode['flashvars'] = t('checkpoint=23423&playerId=@user&gameId=@game&post=@url', array('@user' => $vars['user']->uid, '@game' => $vars['node']->title, '@url' => $url));
