@@ -434,10 +434,16 @@ function quilted_custom_preprocess_block(&$vars, $hook) {
  */
 function quilted_custom_preprocess_node_flashnode(&$vars, $hook) {
   
+  global $base_url;
+  
   if($vars['node']->type == "flashnode") {
     
     // Post URL should always be the same
-    $url = "localhost:8888/mass/www/flash_input";  
+    $url = $base_url . "/flash_input";  
+    
+    
+    // @TODO remove manual
+    $url = "temp-mass.quilted.coop/flash_input";
     
     // Adjust Flashnode's flashvars to accept database data
     $flashnode = node_load($vars['node']->nid);
