@@ -428,27 +428,6 @@ function quilted_custom_preprocess_block(&$vars, $hook) {
 }
 // */
 
-
-/**
- * Override content type Flash node.
- */
-function quilted_custom_preprocess_node_flashnode(&$vars, $hook) {
-  
-  global $base_url;
-  
-  if($vars['node']->type == "flashnode") {
-    
-    // Post URL should always be the same
-    $url = $base_url . "/flash_input";  
-    
-    // Adjust Flashnode's flashvars to accept database data
-    $flashnode = node_load($vars['node']->nid);
-    $flashnode->flashnode['flashvars'] = t('checkpoint=23423&playerId=@user&gameId=@game&post=@url', array('@user' => $vars['user']->uid, '@game' => $vars['node']->title, '@url' => $url));
-    node_save($flashnode);
-    
-  }
-}
-
 /**
 * Trim a string to a given number of words
 *

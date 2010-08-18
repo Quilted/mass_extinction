@@ -34,39 +34,72 @@ function flash_data_menu() {
  * - Send Checkpoint
  */
 function flash_data_receive() {
-	// @TODO Make this php attack safe!
+  
 	$xml = file_get_contents('php://input');
+  $xml = check_markup($xml, 5);
 	$data = xml_parser_string_to_array($xml);
-	// dpr($data);
 	
 	// Gather generic data
 	$player_id = $data["PLAYERID"];
 	$game_id = $data["GAMEID"];
 	
-	// Handle Achievements
 	$achievement_id = $data["achievement"]["ACHIEVEMENTID"];
-	// @TODO check to see if the current player has already earned the achievement. if not, award it. if so, log it but do not notify
+	$document_id = $data["document"]["DOCUMENTID"];
+	$checkpoint = $data["checkpoint"];
+	$forum_id = $data["forum"]["THREADID"];
+	$research = $data["research"];
 	
-	// Handle Documents
-	// @TODO note how many times the document has been made available
-	// make it available if it is unavailable
+	// Prepare string for view
+	$output = 'Player ID: ' . $player_id . "\n";
+	$output .= 'Game ID: ' . $game_id . "\n";
+	if($achievement_id) {
+	  $output .= 'Achievement ID: ' . $achievement_id . "\n";
+	}
+	if($document_id) {
+		$output .= 'Document ID: ' . $document_id . "\n";
+	}
+	if($checkpoint) {
+		$output .= 'Checkpoint: ' . $checkpoint . "\n";
+	}
+	if($forum_id) {
+		$output .= 'Forum ID: ' . $forum_id . "\n";
+		$output .= 'Forum message: ' . $forum_message . "\n";
+	}
+	if($research) {
+		$output .= 'Research: ' . $research . "\n";
+	}
 	
-	// Handle Research Data
-	// @TODO
+	// Create a Flash Data node
+	$node = new stdClass();
+  $node->title = $game_id . ': ' . date('Y-m-d H:i:s');
+  $node->body = $output;
+  $node->type = 'flash_data';
+  $node->status = 1;
+  $node->format = 1;
+  node_save($node);
 	
-	// Handle Forum Post
-	// @TODO Check for the correct forum id, send a post from the player with the message
-	
-	// Handle Checkpoint
-	// @TODO save checkpoint
-	
-	
-	
-	// dpr($player_id . ", " . $game_id . ", " . $achievement_id);
+  // dpr($data);
+  // dpr($player_id . ", " . $game_id . ", " . $achievement_id);
 }
 
 
-
+/**
+ * Implementation of hook_nodeapi
+ * 
+ * Handles updating the flashvars for Flash content type nodes
+ */
+function flash_data_nodeapi(&$node, $op) {
+	if($op == "load" && $node->type == "flashnode") {
+		
+		global $base_url;
+		global $user;
+		
+		$checkpoint = '29898234';
+		$url = $base_url . '/flash_input';
+		$player = $user->uid;
+		$node->flashnode['flashvars'] = t('checkpoint=@checkpoint&playerId=@player&gameId=@game&post=@url', array('@checkpoint' => $checkpoint, '@player' => $player, '@game' => $node->title, '@url' => $url));
+	}
+}
 
 
 
