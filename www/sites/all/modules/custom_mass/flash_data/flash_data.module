@@ -16,7 +16,8 @@ function flash_data_menu() {
 	$items['flash_input'] = array(
 		'title' => t('Testing'),
 		'page callback' => 'flash_data_receive',
-		'access arguments' => array(TRUE),
+		'access callback' => 'user_access',
+		'access arguments' => array('access content'),
 		'type' => MENU_CALLBACK
 	);
 	
