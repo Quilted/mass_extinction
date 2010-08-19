@@ -37,17 +37,20 @@ function flash_data_receive() {
   
 	$xml = file_get_contents('php://input');
   $xml = check_markup($xml, 5);
-	$data = xml_parser_string_to_array($xml);
+	
+	$obj = new xml2array($xml);
+	$data = $obj->getResult();
 	
 	// Gather generic data
-	$player_id = $data["PLAYERID"];
-	$game_id = $data["GAMEID"];
+	$player_id = $data["game"]["@playerid"];
+	$game_id = $data["game"]["@gameid"];
 	
-	$achievement_id = $data["achievement"]["ACHIEVEMENTID"];
-	$document_id = $data["document"]["DOCUMENTID"];
-	$checkpoint = $data["checkpoint"];
-	$forum_id = $data["forum"]["THREADID"];
-	$research = $data["research"];
+	$achievement_id = $data["game"]["achievement"]["@achievementid"];
+	$document_id = $data["game"]["document"]["@documentid"];
+	$checkpoint = $data["game"]["checkpoint"]["#text"];
+	$forum_id = $data["game"]["forum"]["@threadid"];
+	$forum_message = $data["game"]["forum"]["#text"];
+	$research = $data["game"]["research"]["#text"];
 	
 	// Prepare string for view
 	$output = 'Player ID: ' . $player_id . "\n";
@@ -78,8 +81,6 @@ function flash_data_receive() {
   $node->format = 1;
   node_save($node);
 	
-  // dpr($data);
-  // dpr($player_id . ", " . $game_id . ", " . $achievement_id);
 }
 
 
@@ -102,5 +103,74 @@ function flash_data_nodeapi(&$node, $op) {
 }
 
 
-
-
+/*
+ * Excerpted from  
+ * http://www.akchauhan.com/convert-xml-to-array-using-dom-extension-in-php5/
+ */
+class xml2array {
+ 
+	function xml2array($xml) {
+		if (is_string($xml)) {
+			$this->dom = new DOMDocument;
+			$this->dom->loadXml($xml);
+		}
+ 
+		return FALSE;
+	}
+ 
+	function _process($item) { 
+		$occurance = array();
+ 	
+		if(is_array($item->childNodes)) {
+			foreach($item->childNodes as $child) {
+				$occurance[$child->nodeName]++;
+			}
+		}
+		 
+		if($item->nodeType == XML_TEXT_NODE) { 
+			$result = html_entity_decode(htmlentities($item->nodeValue, ENT_COMPAT, 'UTF-8'), 
+                                     ENT_COMPAT,'ISO-8859-15');
+		} 
+		else {
+			if($item->hasChildNodes()){
+				$children = $item->childNodes;
+ 
+				for($i=0; $i<$children->length; $i++) {
+					$child = $children->item($i);
+ 
+					if($child->nodeName != '#text') {
+						if($occurance[$child->nodeName] > 1) {
+							$result[$child->nodeName][] = $this->_process($child);
+						}
+						else {
+							$result[$child->nodeName] = $this->_process($child);
+						}
+					}
+					else if ($child->nodeName == '#text') {
+						$text = $this->_process($child);
+ 
+						if (trim($text) != '') {
+							$result[$child->nodeName] = $this->_process($child);
+						}
+					}
+				}
+			} 
+ 
+			if($item->hasAttributes()) { 
+				$attributes = $item->attributes;
+ 
+				if(!is_null($attributes)) {
+					foreach ($attributes as $key => $attr) {
+						$result["@".$attr->name] = $attr->value;
+					}
+				}
+			}
+		}
+ 
+		return $result;
+	}
+ 
+	function getResult() {
+		return $this->_process($this->dom);
+	}
+}

@@ -105,6 +105,9 @@ class XML_Unserializer {
     xml_parser_free($p);
 
     $tmp = $this->build_array($this->stack[0]);
+
+		// dpr($tmp);
+		
     if (count($tmp) == 1) {
       $this->arr_output = array_pop($tmp);
     }
@@ -120,6 +123,9 @@ class XML_Unserializer {
   }
 
   function build_array($stack) {
+	
+		// dpr($stack);
+		
     $result = array();
     if (count($stack['attributes']) > 0) {
       $result = array_merge($result, $stack['attributes']);
@@ -154,6 +160,8 @@ class XML_Unserializer {
       $result = array_merge($result, $children);
     }
 
+		// dpr("stack data");
+		// dpr($stack['data']);
     if (count($result) == 0) {
       return trim($stack['data']);
     }
@@ -174,6 +182,7 @@ class XML_Unserializer {
   function end_handler($parser, $name, $attribs = array()) {
     $token = array_pop($this->stack);
     $this->stack[count($this->stack) - 1]['children'][] = $token;
+		dpr($this->stack);
   }
 
   function data_handler($parser, $data) {

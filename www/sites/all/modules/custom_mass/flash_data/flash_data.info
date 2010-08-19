@@ -2,4 +2,3 @@ name = Flash Data
 description = Receives and parses Flash data sent via URL POST request
 package = Other
 core = 6.x
-dependencies[] = "xml_parser"
